@@ -6,6 +6,7 @@ import (
 	"os"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/imgui-go"
 	"github.com/sqweek/dialog"
 )
 
@@ -42,45 +43,52 @@ func loop() {
 			fmt.Println("Textured")
 			texture = tex
 		})
+
 	}
 
 	fileControls := g.Layout{
-		g.Labelf("File: %s", filename),
+
+		g.InputText(&filename).Flags(g.InputTextFlagsReadOnly).Label("File"),
 		g.Button("Load File").OnClick(loadFileButtonClicked),
 	}
 	GenerationControls := g.Layout{}
 	if FileLoaded {
 		GenerationControls = g.Layout{
+			Title("Midi Setup"),
 			g.InputInt(&dTimePerLine).Label("Ticks Per Paper Division"),
 			g.Tooltip("The number of midi ticks that will equal 1 unit of space on the paper"),
 			g.InputInt(&octaveDisplacementAmt).Label("Octave Displacement"),
 			g.Tooltip("To get music to fit in the range of the music box. -1 corresponds to down 1 octave, +1 to up 1 octave"),
 			g.Separator(),
 
+			Title("Sheet Setup"),
 			g.InputFloat(&BetweenPitchLinesMM).Label("Pitch Spacing (MM)"),
 			g.Tooltip("The Distance between horizontal lines for pitch in millimeters of the music paper. 2 mm on mine"),
 			g.InputFloat(&BetweenRhythmLinesMM).Label("Rhythm Spacing (MM)"),
 			g.Tooltip("The Distance between vertical lines in millimeters of the music paper. 8 mm on mine"),
-			g.Separator(),
+			g.Separator(), g.Spacing(),
+
+			Title("Machine Setup"),
 			g.InputFloat(&TravelHeight).Label("Travel Height (MM)"),
 			g.Tooltip("The height at which the marker will move when travelling between to points"),
 			g.InputFloat(&DrawHeight).Label("Draw Height (MM)"),
 			g.Tooltip("The height to which the marker will descend to when drawing on the paper"),
-			g.Separator(),
+			g.Separator(), g.Spacing(),
 
 			g.Combo("Axes Setup", "X Time", []string{"X Time", "Y Time"}, &Orientation),
 			g.Tooltip("Setup of CNC Axes. \nOption 1 - X is time, Y is pitch\nOption 2 - Y is pitch, X is time"),
 			g.Checkbox("Flip X", &flipX),
 			g.Checkbox("Flip Y", &flipY),
+
 			g.Separator(),
 			g.InputFloat(&XYFeedRate).Label("XY Feed Rate (mm/min)"),
 			g.Tooltip("THe Feed Rate used when moving between two points"),
 			g.InputFloat(&ZFeedRate).Label("Z Feed Rate (mm/min)"),
 			g.Tooltip("THe Feed Rate used when moving up/down to draw a dot"),
-			g.Separator(),
+			g.Separator(), g.Spacing(),
 
 			g.Button("Create Gcode").OnClick(GenerateGCODEButtonClicked),
-			g.Separator(),
+			g.Separator(), g.Spacing(),
 
 			g.Label("Music Points"),
 			g.Tooltip("Times and Note values of the piece, ** denote that this note is not playable on the music box"),
@@ -92,19 +100,42 @@ func loop() {
 		g.Separator(),
 		GenerationControls,
 	}
-	preview := g.Image(texture)
+	//preview := g.Image(texture)
 
 	g.SingleWindow().Layout(
-
-		g.SplitLayout(g.DirectionHorizontal, 300, controls, preview),
+		controls,
+		//g.SplitLayout(g.DirectionHorizontal, 600, controls, preview),
 	)
 	FirstRun = false
 }
 
 func main() {
-	wnd := g.NewMasterWindow("Canvas", 600, 600, 0)
+
+	wnd := g.NewMasterWindow("MIDI To GCODE", 600, 600, 0)
 
 	wnd.Run(loop)
+}
+
+type TitleWidget struct {
+	Label string
+}
+
+func Title(label string) TitleWidget {
+	return TitleWidget{label}
+}
+
+func (tw TitleWidget) Build() {
+
+	var windowWidth = imgui.GetItemRectSize().X                        //ImGui.GetWindowSize().x;
+	var textWidth = imgui.CalcTextSize("--"+tw.Label+"--", false, 0).X //ImGui::CalcTextSize(text.c_str()).x;
+
+	x := (windowWidth - textWidth) * 0.5
+	y := imgui.CursorPosY()
+
+	imgui.SetCursorPos(imgui.Vec2{x, y})
+	//ImGui::Text(text.c_str());
+
+	imgui.Text("--" + tw.Label + "--")
 }
 
 func GenerateGCODEButtonClicked() {

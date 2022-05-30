@@ -29,9 +29,6 @@ func readMidi(fname string) ([]MusicDot, error) {
 		return nil, fmt.Errorf("error parsing file")
 	}
 
-	// Print number of midi tracks
-	fmt.Println("TrackNum", midi.GetTracksNum())
-
 	var Notes = []MusicDot{}
 	for i := 0; i < int(midi.GetTracksNum()); i++ {
 
